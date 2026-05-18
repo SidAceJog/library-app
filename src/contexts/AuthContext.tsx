@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     sessionStorage.clear()
     // Use replace to prevent back-button restoring session
-    window.location.href = window.location.origin + window.location.pathname.split('/').slice(0, 2).join('/') + '/'
+    window.location.href = window.location.origin + '/'
   }
 
   return (

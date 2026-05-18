@@ -1,0 +1,142 @@
+name: WhatsApp Due Date Reminders
+
+on:
+  schedule:
+    # Run daily at 9 AM IST (3:30 AM UTC)
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send WhatsApp reminders
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
+        run: |
+          # Fetch borrowings due in 2 days
+          DUE_DATE=$(date -d "+2 days" +%Y-%m-%d 2>/dev/null || date -v+2d +%Y-%m-%d)
+          
+          RESPONSE=$(curl -s "${SUPABASE_URL}/rest/v1/borrowings?select=id,due_at,resident:residents(name,whatsapp_number),book:books(title)&returned_at=is.null&due_at=gte.${DUE_DATE}T00:00:00&due_at=lt.${DUE_DATE}T23:59:59" \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}")
+          
+          echo "Found borrowings due on ${DUE_DATE}:"
+          echo "$RESPONSE" | python3 -c "
+          import json, sys, urllib.request, urllib.parse
+          
+          data = json.load(sys.stdin)
+          token = '${WHATSAPP_TOKEN}'
+          phone_id = '${WHATSAPP_PHONE_ID}'
+          
+          for item in data:
+              resident = item.get('resident', {})
+              book = item.get('book', {})
+              phone = resident.get('whatsapp_number', '')
+              name = resident.get('name', 'Resident')
+              title = book.get('title', 'a book')
+              
+              if not phone:
+                  continue
+              
+              # Clean phone number
+              phone = ''.join(c for c in phone if c.isdigit())
+              if not phone.startswith('91'):
+                  phone = '91' + phone
+              
+              # Send WhatsApp message via Meta Cloud API
+              url = f'https://graph.facebook.com/v18.0/{phone_id}/messages'
+              payload = json.dumps({
+                  'messaging_product': 'whatsapp',
+                  'to': phone,
+                  'type': 'text',
+                  'text': {'body': f'Hi {name}, friendly reminder that your library book \"{title}\" is due in 2 days. Please return it on time. Thank you!'}
+              }).encode()
+              
+              req = urllib.request.Request(url, data=payload, headers={
+                  'Authorization': f'Bearer {token}',
+                  'Content-Type': 'application/json'
+              })
+              
+              try:
+                  urllib.request.urlopen(req)
+                  print(f'Sent reminder to {name} ({phone})')
+              except Exception as e:
+                  print(f'Failed to send to {name}: {e}')
+          "
+
+      - name: Notify admins about overdue books
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_PHONE_ID: ${{ secrets.WHATSAPP_PHONE_ID }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          
+          # Get overdue count
+          OVERDUE=$(curl -s "${SUPABASE_URL}/rest/v1/borrowings?select=id,resident:residents(name,flat_number),book:books(title)&returned_at=is.null&due_at=lt.${TODAY}T00:00:00" \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}")
+          
+          # Get admin phone numbers
+          ADMINS=$(curl -s "${SUPABASE_URL}/rest/v1/residents?select=name,whatsapp_number&role=eq.admin" \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}")
+          
+          echo "$OVERDUE" | python3 -c "
+          import json, sys, urllib.request
+          
+          overdue = json.load(sys.stdin)
+          if not overdue:
+              print('No overdue books today')
+              sys.exit(0)
+          
+          admins_raw = '''${ADMINS}'''
+          admins = json.loads(admins_raw) if admins_raw else []
+          
+          token = '${WHATSAPP_TOKEN}'
+          phone_id = '${WHATSAPP_PHONE_ID}'
+          
+          # Build summary
+          lines = [f'📚 Library Overdue Report ({len(overdue)} books):']
+          for item in overdue[:10]:
+              r = item.get('resident', {})
+              b = item.get('book', {})
+              lines.append(f'• {r.get(\"flat_number\",\"?\")} - {b.get(\"title\",\"Unknown\")}')
+          if len(overdue) > 10:
+              lines.append(f'... and {len(overdue)-10} more')
+          
+          message = '\n'.join(lines)
+          
+          for admin in admins:
+              phone = ''.join(c for c in admin.get('whatsapp_number','') if c.isdigit())
+              if not phone:
+                  continue
+              if not phone.startswith('91'):
+                  phone = '91' + phone
+              
+              url = f'https://graph.facebook.com/v18.0/{phone_id}/messages'
+              payload = json.dumps({
+                  'messaging_product': 'whatsapp',
+                  'to': phone,
+                  'type': 'text',
+                  'text': {'body': message}
+              }).encode()
+              
+              req = urllib.request.Request(url, data=payload, headers={
+                  'Authorization': f'Bearer {token}',
+                  'Content-Type': 'application/json'
+              })
+              
+              try:
+                  urllib.request.urlopen(req)
+                  print(f'Notified admin {admin.get(\"name\")}')
+              except Exception as e:
+                  print(f'Failed: {e}')
+          "

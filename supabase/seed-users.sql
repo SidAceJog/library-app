@@ -1,0 +1,10 @@
+-- ============================================
+-- SEED SCRIPT: Generate 488 flat user accounts
+-- ============================================
+-- NOTE: Supabase Auth users must be created via the Auth API, not SQL directly.
+-- Use the seed script (scripts/seed-users.ts) to create users programmatically.
+-- This file creates the residents table entries AFTER auth users exist.
+--
+-- Flat numbering assumed: A-101 to A-122, B-101 to B-122, ... (adjust to your society)
+-- Default password for all: the flat number itself (e.g., "A-101")
+-- Users must change password on first login.

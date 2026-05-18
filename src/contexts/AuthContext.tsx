@@ -36,11 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.role === 'admin') {
         setIsAdmin(true)
       } else {
+        const today = new Date()
+        const todayStr = today.getFullYear() + '-' + 
+          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(today.getDate()).padStart(2, '0')
         const { data: tempAccess } = await supabase
           .from('temp_admin_access')
-          .select('*')
+          .select('id')
           .eq('resident_id', userId)
-          .eq('granted_date', new Date().toISOString().split('T')[0])
+          .eq('granted_date', todayStr)
           .gt('expires_at', new Date().toISOString())
           .limit(1)
         setIsAdmin(!!tempAccess && tempAccess.length > 0)

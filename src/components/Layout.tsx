@@ -9,16 +9,16 @@ export default function Layout() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-900">📚 Pride Platinum Library</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">
+          <h1 className="text-sm sm:text-lg font-bold text-gray-900 truncate">📚 Pride Platinum Library</h1>
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+            <span className="text-xs sm:text-sm text-gray-600">
               {resident?.flat_number}
               {isAdmin && <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Admin</span>}
             </span>
             <button
               onClick={signOut}
               data-testid="logout-button"
-              className="text-sm text-red-600 hover:text-red-800"
+              className="text-sm text-red-600 hover:text-red-800 px-2 py-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               Logout
             </button>

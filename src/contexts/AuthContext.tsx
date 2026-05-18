@@ -90,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setResident(null)
     setIsAdmin(false)
+    window.location.reload()
   }
 
   return (

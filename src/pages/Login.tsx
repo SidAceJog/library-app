@@ -25,7 +25,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-sm w-full space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">📚 Society Library</h1>
+          <h1 className="text-2xl font-bold text-gray-900">📚 Pride Platinum Library</h1>
           <p className="mt-2 text-sm text-gray-600">Sign in with your flat number</p>
         </div>
 

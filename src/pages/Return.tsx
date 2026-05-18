@@ -7,7 +7,7 @@ import { Borrowing } from '@/lib/types'
 type Mode = 'choose' | 'scan' | 'search' | 'confirm'
 
 export default function Return() {
-  const { user } = useAuth()
+  const { user, resident } = useAuth()
   const [mode, setMode] = useState<Mode>('choose')
   const [borrowing, setBorrowing] = useState<Borrowing | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -77,6 +77,13 @@ export default function Return() {
 
   async function confirmReturn() {
     if (!borrowing) return
+
+    // Prevent temp admins from returning their own books
+    if (borrowing.resident_id === user?.id && resident?.role !== 'admin') {
+      setError('You cannot return your own book as a volunteer. Ask another admin to process this return.')
+      return
+    }
+
     setLoading(true)
 
     const { error: updateErr } = await supabase

@@ -90,7 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut({ scope: 'local' })
     setResident(null)
     setIsAdmin(false)
-    window.location.reload()
+    // Clear all Supabase auth storage to prevent mobile session persistence
+    const storageKey = `sb-rbohkcfxowpyaymqhize-auth-token`
+    localStorage.removeItem(storageKey)
+    sessionStorage.clear()
+    window.location.replace(window.location.pathname)
   }
 
   return (

@@ -90,11 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut({ scope: 'local' })
     setResident(null)
     setIsAdmin(false)
-    // Clear all Supabase auth storage to prevent mobile session persistence
-    const storageKey = `sb-rbohkcfxowpyaymqhize-auth-token`
-    localStorage.removeItem(storageKey)
+    // Clear all Supabase auth data from storage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-')) localStorage.removeItem(key)
+    })
     sessionStorage.clear()
-    window.location.replace(window.location.pathname)
+    // Use replace to prevent back-button restoring session
+    window.location.href = window.location.origin + window.location.pathname.split('/').slice(0, 2).join('/') + '/'
   }
 
   return (

@@ -10,6 +10,7 @@ export default function Return() {
   const { user, resident } = useAuth()
   const [mode, setMode] = useState<Mode>('choose')
   const [borrowing, setBorrowing] = useState<Borrowing | null>(null)
+  const [conditionNote, setConditionNote] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [results, setResults] = useState<(Borrowing & { book: { title: string; isbn: string }; resident: { flat_number: string; name: string } })[]>([])
   const [error, setError] = useState('')
@@ -94,10 +95,20 @@ export default function Return() {
     if (updateErr) {
       setError('Failed to process return')
     } else {
+      // Save condition note if provided
+      if (conditionNote.trim()) {
+        await supabase.from('book_conditions').insert({
+          book_id: (borrowing as any).book_id || (borrowing as any).book?.id,
+          noted_by: user?.id,
+          borrowing_id: borrowing.id,
+          note: conditionNote.trim(),
+        })
+      }
       setSuccess('✅ Book returned successfully!')
       setTimeout(() => {
         setMode('choose')
         setBorrowing(null)
+        setConditionNote('')
         setSuccess('')
       }, 2000)
     }
@@ -185,6 +196,21 @@ export default function Return() {
             <p><span className="font-medium">Borrower:</span> {(borrowing as any).resident?.flat_number} — {(borrowing as any).resident?.name}</p>
             <p><span className="font-medium">Borrowed:</span> {new Date(borrowing.borrowed_at).toLocaleDateString()}</p>
             <p><span className="font-medium">Due:</span> {new Date(borrowing.due_at).toLocaleDateString()}</p>
+          </div>
+
+          <div>
+            <label htmlFor="condition-note" className="block text-sm font-medium text-gray-700">
+              Condition note (optional)
+            </label>
+            <input
+              id="condition-note"
+              data-testid="condition-note-input"
+              type="text"
+              value={conditionNote}
+              onChange={(e) => setConditionNote(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="e.g. Page 42 torn, spine cracked"
+            />
           </div>
 
           <div className="flex gap-2">

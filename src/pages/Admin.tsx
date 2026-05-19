@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Borrowing, VolunteerRequest } from '@/lib/types'
 
-type Tab = 'overdue' | 'users' | 'volunteers' | 'settings'
+type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'settings'
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('overdue')
@@ -12,8 +12,8 @@ export default function Admin() {
       <h2 className="text-xl font-bold">Admin Dashboard</h2>
 
       {/* Tab navigation */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-        {(['overdue', 'users', 'volunteers', 'settings'] as Tab[]).map(t => (
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
+        {(['overdue', 'users', 'volunteers', 'notices', 'settings'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -27,6 +27,7 @@ export default function Admin() {
       {tab === 'overdue' && <OverdueTab />}
       {tab === 'users' && <UsersTab />}
       {tab === 'volunteers' && <VolunteersTab />}
+      {tab === 'notices' && <NoticesTab />}
       {tab === 'settings' && <SettingsTab />}
     </div>
   )
@@ -231,6 +232,108 @@ function VolunteersTab() {
                   Reject
                 </button>
               </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function NoticesTab() {
+  const [notices, setNotices] = useState<{ id: string; title: string; body: string; is_active: boolean; created_at: string }[]>([])
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [posting, setPosting] = useState(false)
+
+  async function loadNotices() {
+    const { data } = await supabase
+      .from('notices')
+      .select('id, title, body, is_active, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    setNotices(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => { loadNotices() }, [])
+
+  async function postNotice(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim() || !body.trim()) return
+    setPosting(true)
+
+    const user = (await supabase.auth.getUser()).data.user
+    await supabase.from('notices').insert({ title: title.trim(), body: body.trim(), posted_by: user?.id })
+
+    setTitle('')
+    setBody('')
+    setPosting(false)
+    loadNotices()
+  }
+
+  async function toggleNotice(id: string, currentlyActive: boolean) {
+    await supabase.from('notices').update({ is_active: !currentlyActive }).eq('id', id)
+    loadNotices()
+  }
+
+  if (loading) return <p className="text-sm text-gray-500">Loading...</p>
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={postNotice} className="bg-white border rounded-lg p-4 space-y-3">
+        <div>
+          <label htmlFor="notice-title" className="block text-sm font-medium text-gray-700">Title</label>
+          <input
+            id="notice-title"
+            data-testid="notice-title-input"
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            placeholder="e.g. Library closed on Saturday"
+          />
+        </div>
+        <div>
+          <label htmlFor="notice-body" className="block text-sm font-medium text-gray-700">Message</label>
+          <textarea
+            id="notice-body"
+            data-testid="notice-body-input"
+            required
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={3}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            placeholder="Write your notice..."
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={posting}
+          data-testid="notice-post-button"
+          className="rounded-md bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        >
+          {posting ? 'Posting...' : 'Post Notice'}
+        </button>
+      </form>
+
+      {notices.length > 0 && (
+        <ul className="bg-white border rounded-lg divide-y shadow-sm">
+          {notices.map(n => (
+            <li key={n.id} className="px-4 py-3 flex items-start justify-between gap-2">
+              <div>
+                <p className={`text-sm font-medium ${!n.is_active ? 'text-gray-400 line-through' : ''}`}>{n.title}</p>
+                <p className={`text-xs ${!n.is_active ? 'text-gray-300' : 'text-gray-600'}`}>{n.body}</p>
+                <p className="text-xs text-gray-400 mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
+              </div>
+              <button
+                onClick={() => toggleNotice(n.id, n.is_active)}
+                className={`text-xs px-2 py-1 rounded shrink-0 ${n.is_active ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+              >
+                {n.is_active ? 'Hide' : 'Show'}
+              </button>
             </li>
           ))}
         </ul>

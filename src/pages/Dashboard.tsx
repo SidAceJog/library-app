@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Borrowing } from '@/lib/types'
+import Notices from '@/components/Notices'
 
 export default function Dashboard() {
   const { user, resident } = useAuth()
@@ -52,6 +53,9 @@ export default function Dashboard() {
         <h2 className="text-xl font-bold">Welcome, {resident?.name || resident?.flat_number}</h2>
         <p className="text-sm text-gray-500">Flat {resident?.flat_number}</p>
       </div>
+
+      {/* Notices */}
+      <Notices />
 
       {/* Current borrowing */}
       <section>

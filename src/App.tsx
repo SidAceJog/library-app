@@ -8,6 +8,7 @@ import Checkout from '@/pages/Checkout'
 import Return from '@/pages/Return'
 import Admin from '@/pages/Admin'
 import Volunteer from '@/pages/Volunteer'
+import Wishlist from '@/pages/Wishlist'
 
 function AppRoutes() {
   const { user, resident, isAdmin, loading } = useAuth()
@@ -30,6 +31,7 @@ function AppRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/checkout" element={isAdmin ? <Checkout /> : <Navigate to="/dashboard" />} />
         <Route path="/return" element={isAdmin ? <Return /> : <Navigate to="/dashboard" />} />
         <Route path="/admin" element={isAdmin ? <Admin /> : <Navigate to="/dashboard" />} />

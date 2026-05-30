@@ -22,7 +22,7 @@ jobs:
           # Fetch borrowings due in 2 days
           DUE_DATE=$(date -d "+2 days" +%Y-%m-%d 2>/dev/null || date -v+2d +%Y-%m-%d)
           
-          RESPONSE=$(curl -s "${SUPABASE_URL}/rest/v1/borrowings?select=id,due_at,resident:residents(name,whatsapp_number),book:books(title)&returned_at=is.null&due_at=gte.${DUE_DATE}T00:00:00&due_at=lt.${DUE_DATE}T23:59:59" \
+          RESPONSE=$(curl -s "${SUPABASE_URL}/rest/v1/borrowings?select=id,due_at,resident:residents!borrowings_resident_id_fkey(name,whatsapp_number),book:books(title)&returned_at=is.null&due_at=gte.${DUE_DATE}T00:00:00&due_at=lt.${DUE_DATE}T23:59:59" \
             -H "apikey: ${SUPABASE_SERVICE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}")
           
@@ -80,7 +80,7 @@ jobs:
           TODAY=$(date +%Y-%m-%d)
           
           # Get overdue count
-          OVERDUE=$(curl -s "${SUPABASE_URL}/rest/v1/borrowings?select=id,resident:residents(name,flat_number),book:books(title)&returned_at=is.null&due_at=lt.${TODAY}T00:00:00" \
+          OVERDUE=$(curl -s "${SUPABASE_URL}/rest/v1/borrowings?select=id,resident:residents!borrowings_resident_id_fkey(name,flat_number),book:books(title)&returned_at=is.null&due_at=lt.${TODAY}T00:00:00" \
             -H "apikey: ${SUPABASE_SERVICE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}")
           

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import PhotoCapture from '@/components/PhotoCapture'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Borrowing } from '@/lib/types'
@@ -11,6 +12,7 @@ export default function Return() {
   const [mode, setMode] = useState<Mode>('choose')
   const [borrowing, setBorrowing] = useState<Borrowing | null>(null)
   const [conditionNote, setConditionNote] = useState('')
+  const [conditionPhoto, setConditionPhoto] = useState<File | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [results, setResults] = useState<(Borrowing & { book: { title: string; isbn: string }; resident: { flat_number: string; name: string } })[]>([])
   const [error, setError] = useState('')
@@ -97,11 +99,26 @@ export default function Return() {
     } else {
       // Save condition note if provided
       if (conditionNote.trim()) {
+        let photoUrl: string | null = null
+
+        // Upload condition photo if provided
+        if (conditionPhoto) {
+          const filePath = `conditions/${borrowing.id}.${conditionPhoto.name.split('.').pop()}`
+          const { error: uploadErr } = await supabase.storage
+            .from('book-covers')
+            .upload(filePath, conditionPhoto, { upsert: true })
+
+          if (!uploadErr) {
+            const { data: urlData } = supabase.storage.from('book-covers').getPublicUrl(filePath)
+            photoUrl = urlData.publicUrl
+          }
+        }
+
         await supabase.from('book_conditions').insert({
           book_id: (borrowing as any).book_id || (borrowing as any).book?.id,
           noted_by: user?.id,
           borrowing_id: borrowing.id,
-          note: conditionNote.trim(),
+          note: conditionNote.trim() + (photoUrl ? `\n[Photo: ${photoUrl}]` : ''),
         })
       }
       setSuccess('✅ Book returned successfully!')
@@ -109,6 +126,7 @@ export default function Return() {
         setMode('choose')
         setBorrowing(null)
         setConditionNote('')
+        setConditionPhoto(null)
         setSuccess('')
       }, 2000)
     }
@@ -212,6 +230,10 @@ export default function Return() {
               placeholder="e.g. Page 42 torn, spine cracked"
             />
           </div>
+
+          {conditionNote.trim() && (
+            <PhotoCapture onCapture={(file) => setConditionPhoto(file)} />
+          )}
 
           <div className="flex gap-2">
             <button

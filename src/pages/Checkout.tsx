@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { lookupISBN } from '@/lib/isbn'
 import { useAuth } from '@/contexts/AuthContext'
 
-type Step = 'scan' | 'select-resident' | 'confirm'
+type Step = 'scan' | 'no-isbn' | 'select-resident' | 'confirm'
 
 interface CheckoutState {
   isbn: string
@@ -30,6 +30,9 @@ export default function Checkout() {
   const [searchQuery, setSearchQuery] = useState('')
   const [residents, setResidents] = useState<{ id: string; flat_number: string; name: string; whatsapp_number: string }[]>([])
   const [residentWhatsapp, setResidentWhatsapp] = useState('')
+  const [noIsbnTitle, setNoIsbnTitle] = useState('')
+  const [noIsbnAuthor, setNoIsbnAuthor] = useState('')
+  const [generatedId, setGeneratedId] = useState('')
 
   async function handleScan(isbn: string) {
     setError('')
@@ -61,6 +64,36 @@ export default function Checkout() {
       setState(s => ({ ...s, isbn, title: meta.title, author: meta.author, cover_url: meta.cover_url, bookId: newBook.id }))
     }
 
+    setLoading(false)
+    setStep('select-resident')
+  }
+
+  async function handleNoIsbnSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!noIsbnTitle.trim()) { setError('Please enter a title'); return }
+    setError('')
+    setLoading(true)
+
+    // Generate PP-NOISBN-XXX id
+    const { data: seqData } = await supabase.rpc('nextval_noisbn')
+    const seqNum = seqData || Date.now()
+    const generatedIsbn = `PP-NOISBN-${String(seqNum).padStart(3, '0')}`
+
+    // Add to catalog
+    const { data: newBook, error: insertErr } = await supabase
+      .from('books')
+      .insert({ isbn: generatedIsbn, title: noIsbnTitle.trim(), author: noIsbnAuthor.trim() || 'Unknown', cover_url: null })
+      .select()
+      .single()
+
+    if (insertErr) {
+      setError('Failed to add book to catalog')
+      setLoading(false)
+      return
+    }
+
+    setState(s => ({ ...s, isbn: generatedIsbn, title: noIsbnTitle.trim(), author: noIsbnAuthor.trim() || 'Unknown', cover_url: null, bookId: newBook.id }))
+    setGeneratedId(generatedIsbn)
     setLoading(false)
     setStep('select-resident')
   }
@@ -165,14 +198,74 @@ export default function Checkout() {
           <p className="text-sm text-gray-600 mb-3">Scan the book's ISBN barcode to begin checkout.</p>
           <BarcodeScanner onScan={handleScan} onError={setError} />
           {loading && <p className="text-sm text-gray-500 mt-2">Looking up book...</p>}
+          <div className="border-t pt-3 mt-3">
+            <button
+              onClick={() => setStep('no-isbn')}
+              data-testid="no-isbn-button"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              📝 Book has no ISBN
+            </button>
+          </div>
         </div>
+      )}
+
+      {step === 'no-isbn' && (
+        <form onSubmit={handleNoIsbnSubmit} className="space-y-3">
+          <p className="text-sm text-gray-600">Enter book details manually. A unique ID will be generated for you to write on the book.</p>
+          <div>
+            <label htmlFor="noisbn-title" className="block text-sm font-medium text-gray-700">Book Title</label>
+            <input
+              id="noisbn-title"
+              data-testid="noisbn-title-input"
+              type="text"
+              required
+              value={noIsbnTitle}
+              onChange={(e) => setNoIsbnTitle(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="e.g. The Jungle Book"
+            />
+          </div>
+          <div>
+            <label htmlFor="noisbn-author" className="block text-sm font-medium text-gray-700">Author (optional)</label>
+            <input
+              id="noisbn-author"
+              data-testid="noisbn-author-input"
+              type="text"
+              value={noIsbnAuthor}
+              onChange={(e) => setNoIsbnAuthor(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="e.g. Rudyard Kipling"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setStep('scan')}
+              className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              data-testid="noisbn-submit-button"
+              className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Add Book'}
+            </button>
+          </div>
+        </form>
       )}
 
       {step === 'select-resident' && (
         <div className="space-y-3">
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
             <p className="font-medium">{state.title}</p>
-            <p className="text-sm text-gray-600">by {state.author} • ISBN: {state.isbn}</p>
+            <p className="text-sm text-gray-600">by {state.author} • ID: {state.isbn}</p>
+            {generatedId && (
+              <p className="text-sm font-bold text-blue-800 mt-1">✏️ Write on book: {generatedId}</p>
+            )}
           </div>
 
           <div>

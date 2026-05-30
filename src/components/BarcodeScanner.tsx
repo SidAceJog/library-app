@@ -49,8 +49,11 @@ export default function BarcodeScanner({ onScan, onError }: BarcodeScannerProps)
     if (cleaned.length === 13 || cleaned.length === 10) {
       onScan(cleaned)
       setManualIsbn('')
+    } else if (manualIsbn.trim().toUpperCase().startsWith('PP-NOISBN-')) {
+      onScan(manualIsbn.trim().toUpperCase())
+      setManualIsbn('')
     } else {
-      onError?.('ISBN must be 10 or 13 digits')
+      onError?.('Enter a valid ISBN (10 or 13 digits) or PP-NOISBN-XXX code')
     }
   }
 
@@ -91,7 +94,7 @@ export default function BarcodeScanner({ onScan, onError }: BarcodeScannerProps)
             data-testid="manual-isbn-input"
             value={manualIsbn}
             onChange={(e) => setManualIsbn(e.target.value)}
-            placeholder="ISBN (10 or 13 digits)"
+            placeholder="ISBN or PP-NOISBN-XXX"
             className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           />
           <button

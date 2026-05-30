@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import BarcodeScanner from '@/components/BarcodeScanner'
+import PhotoCapture from '@/components/PhotoCapture'
 import { supabase } from '@/lib/supabase'
 import { lookupISBN } from '@/lib/isbn'
 import { useAuth } from '@/contexts/AuthContext'
 
-type Step = 'scan' | 'select-resident' | 'confirm'
+type Step = 'scan' | 'photo' | 'select-resident' | 'confirm'
 
 interface CheckoutState {
   isbn: string
@@ -29,6 +30,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [residents, setResidents] = useState<{ id: string; flat_number: string; name: string }[]>([])
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
 
   async function handleScan(isbn: string) {
     setError('')
@@ -43,23 +45,48 @@ export default function Checkout() {
 
     if (existingBook) {
       setState(s => ({ ...s, isbn, title: existingBook.title, author: existingBook.author, cover_url: existingBook.cover_url, bookId: existingBook.id }))
+      setLoading(false)
+      setStep('select-resident')
     } else {
-      // Lookup from Open Library and add to catalog
+      // Lookup from Open Library
       const meta = await lookupISBN(isbn)
-      const { data: newBook, error: insertErr } = await supabase
-        .from('books')
-        .insert({ isbn, title: meta.title, author: meta.author, cover_url: meta.cover_url })
-        .select()
-        .single()
+      setState(s => ({ ...s, isbn, title: meta.title, author: meta.author, cover_url: meta.cover_url, bookId: null }))
+      setLoading(false)
+      setStep('photo')
+    }
+  }
 
-      if (insertErr) {
-        setError('Failed to add book to catalog')
-        setLoading(false)
-        return
+  async function handlePhotoNext() {
+    setLoading(true)
+    let coverUrl = state.cover_url
+
+    // Upload photo if provided
+    if (photoFile) {
+      const filePath = `${state.isbn}.${photoFile.name.split('.').pop()}`
+      const { error: uploadErr } = await supabase.storage
+        .from('book-covers')
+        .upload(filePath, photoFile, { upsert: true })
+
+      if (!uploadErr) {
+        const { data: urlData } = supabase.storage.from('book-covers').getPublicUrl(filePath)
+        coverUrl = urlData.publicUrl
       }
-      setState(s => ({ ...s, isbn, title: meta.title, author: meta.author, cover_url: meta.cover_url, bookId: newBook.id }))
     }
 
+    // Add book to catalog
+    const { data: newBook, error: insertErr } = await supabase
+      .from('books')
+      .insert({ isbn: state.isbn, title: state.title, author: state.author, cover_url: coverUrl })
+      .select()
+      .single()
+
+    if (insertErr) {
+      setError('Failed to add book to catalog')
+      setLoading(false)
+      return
+    }
+
+    setState(s => ({ ...s, bookId: newBook.id, cover_url: coverUrl }))
     setLoading(false)
     setStep('select-resident')
   }
@@ -155,6 +182,35 @@ export default function Checkout() {
           <p className="text-sm text-gray-600 mb-3">Scan the book's ISBN barcode to begin checkout.</p>
           <BarcodeScanner onScan={handleScan} onError={setError} />
           {loading && <p className="text-sm text-gray-500 mt-2">Looking up book...</p>}
+        </div>
+      )}
+
+      {step === 'photo' && (
+        <div className="space-y-3">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+            <p className="text-sm font-medium text-yellow-800">📚 New book detected!</p>
+            <p className="font-medium mt-1">{state.title}</p>
+            <p className="text-sm text-gray-600">by {state.author} • ISBN: {state.isbn}</p>
+          </div>
+
+          <PhotoCapture onCapture={(file) => setPhotoFile(file)} />
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setStep('scan')}
+              className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Back
+            </button>
+            <button
+              onClick={handlePhotoNext}
+              data-testid="photo-next-button"
+              disabled={loading}
+              className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Saving...' : photoFile ? 'Save & Continue' : 'Skip Photo'}
+            </button>
+          </div>
         </div>
       )}
 

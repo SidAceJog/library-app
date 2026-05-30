@@ -28,11 +28,11 @@ jobs:
           
           echo "Found borrowings due on ${DUE_DATE}:"
           echo "$RESPONSE" | python3 -c "
-          import json, sys, urllib.request, urllib.parse
+          import json, sys, os, urllib.request, urllib.parse
           
           data = json.load(sys.stdin)
-          token = '${WHATSAPP_TOKEN}'
-          phone_id = '${WHATSAPP_PHONE_ID}'
+          token = os.environ['WHATSAPP_TOKEN']
+          phone_id = os.environ['WHATSAPP_PHONE_ID']
           
           for item in data:
               resident = item.get('resident', {})
@@ -89,19 +89,20 @@ jobs:
             -H "apikey: ${SUPABASE_SERVICE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}")
           
+          export ADMINS_JSON="$ADMINS"
           echo "$OVERDUE" | python3 -c "
-          import json, sys, urllib.request
+          import json, sys, os, urllib.request
           
           overdue = json.load(sys.stdin)
           if not overdue:
               print('No overdue books today')
               sys.exit(0)
           
-          admins_raw = '''${ADMINS}'''
+          admins_raw = os.environ.get('ADMINS_JSON', '[]')
           admins = json.loads(admins_raw) if admins_raw else []
           
-          token = '${WHATSAPP_TOKEN}'
-          phone_id = '${WHATSAPP_PHONE_ID}'
+          token = os.environ['WHATSAPP_TOKEN']
+          phone_id = os.environ['WHATSAPP_PHONE_ID']
           
           # Build summary
           lines = [f'📚 Library Overdue Report ({len(overdue)} books):']

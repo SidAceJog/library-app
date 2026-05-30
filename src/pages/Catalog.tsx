@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface CatalogBook {
   id: string
@@ -12,6 +13,7 @@ interface CatalogBook {
 }
 
 export default function Catalog() {
+  const { isAdmin } = useAuth()
   const [books, setBooks] = useState<CatalogBook[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -19,10 +21,11 @@ export default function Catalog() {
   useEffect(() => { loadBooks() }, [])
 
   async function loadBooks() {
-    // Get all books
+    // Get all books (only active ones for catalog)
     const { data: allBooks } = await supabase
       .from('books')
       .select('*')
+      .eq('is_active', true)
       .order('title', { ascending: true })
 
     // Get currently borrowed book IDs
@@ -38,6 +41,11 @@ export default function Catalog() {
       is_available: !borrowedIds.has(book.id),
     })))
     setLoading(false)
+  }
+
+  async function markUnavailable(bookId: string) {
+    await supabase.from('books').update({ is_active: false }).eq('id', bookId)
+    setBooks(books.filter(b => b.id !== bookId))
   }
 
   const filtered = search.length < 2
@@ -88,9 +96,19 @@ export default function Catalog() {
                 <p className="text-sm font-medium truncate">{book.title}</p>
                 <p className="text-xs text-gray-500">{book.author}</p>
                 <p className="text-xs text-gray-400 mt-1">ISBN: {book.isbn}</p>
-                <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded ${book.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {book.is_available ? 'Available' : 'Checked out'}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`inline-block text-xs px-2 py-0.5 rounded ${book.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {book.is_available ? 'Available' : 'Checked out'}
+                  </span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => markUnavailable(book.id)}
+                      className="text-xs text-red-500 underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
             </li>
           ))}

@@ -43,8 +43,8 @@ export default function Catalog() {
     setLoading(false)
   }
 
-  async function markUnavailable(bookId: string) {
-    await supabase.from('books').update({ is_active: false }).eq('id', bookId)
+  async function markUnavailable(bookId: string, reason: string) {
+    await supabase.from('books').update({ is_active: false, inactive_reason: reason }).eq('id', bookId)
     setBooks(books.filter(b => b.id !== bookId))
   }
 
@@ -101,12 +101,17 @@ export default function Catalog() {
                     {book.is_available ? 'Available' : 'Checked out'}
                   </span>
                   {isAdmin && (
-                    <button
-                      onClick={() => markUnavailable(book.id)}
-                      className="text-xs text-red-500 underline"
+                    <select
+                      defaultValue=""
+                      onChange={(e) => { if (e.target.value) markUnavailable(book.id, e.target.value); e.target.value = '' }}
+                      className="text-xs border border-gray-300 rounded px-1 py-0.5 text-red-600"
                     >
-                      Remove
-                    </button>
+                      <option value="" disabled>Remove...</option>
+                      <option value="lost">Lost</option>
+                      <option value="torn">Torn/Damaged</option>
+                      <option value="donated_away">Donated away</option>
+                      <option value="other">Other</option>
+                    </select>
                   )}
                 </div>
               </div>

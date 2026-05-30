@@ -28,7 +28,8 @@ export default function Checkout() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [residents, setResidents] = useState<{ id: string; flat_number: string; name: string }[]>([])
+  const [residents, setResidents] = useState<{ id: string; flat_number: string; name: string; whatsapp_number: string }[]>([])
+  const [residentWhatsapp, setResidentWhatsapp] = useState('')
 
   async function handleScan(isbn: string) {
     setError('')
@@ -70,7 +71,7 @@ export default function Checkout() {
 
     const { data } = await supabase
       .from('residents')
-      .select('id, flat_number, name')
+      .select('id, flat_number, name, whatsapp_number')
       .or(`flat_number.ilike.%${query}%,name.ilike.%${query}%`)
       .eq('is_active', true)
       .limit(10)
@@ -78,14 +79,23 @@ export default function Checkout() {
     setResidents(data || [])
   }
 
-  function selectResident(id: string, name: string, flat: string) {
+  function selectResident(id: string, name: string, flat: string, whatsapp: string) {
     setState(s => ({ ...s, residentId: id, residentName: `${name} (${flat})` }))
+    setResidentWhatsapp(whatsapp || '')
     setStep('confirm')
   }
 
   async function confirmCheckout() {
     setError('')
     setLoading(true)
+
+    // Update WhatsApp number if changed
+    if (residentWhatsapp.trim()) {
+      await supabase
+        .from('residents')
+        .update({ whatsapp_number: residentWhatsapp.trim() })
+        .eq('id', state.residentId)
+    }
 
     // Check borrowing limit
     const { data: settings } = await supabase
@@ -185,7 +195,7 @@ export default function Checkout() {
               {residents.map(r => (
                 <li key={r.id}>
                   <button
-                    onClick={() => selectResident(r.id, r.name, r.flat_number)}
+                    onClick={() => selectResident(r.id, r.name, r.flat_number, r.whatsapp_number)}
                     className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
                     data-testid={`resident-option-${r.flat_number}`}
                   >
@@ -223,6 +233,22 @@ export default function Checkout() {
               <option value={1}>1 week</option>
               <option value={2}>2 weeks</option>
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="resident-whatsapp" className="block text-sm font-medium text-gray-700">
+              WhatsApp Number
+            </label>
+            <input
+              id="resident-whatsapp"
+              data-testid="resident-whatsapp-input"
+              type="tel"
+              value={residentWhatsapp}
+              onChange={(e) => setResidentWhatsapp(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="+91 9876543210"
+            />
+            <p className="mt-1 text-xs text-gray-500">For due date reminders</p>
           </div>
 
           <div className="flex gap-2">

@@ -39,11 +39,13 @@ export default function Checkout() {
     setLoading(true)
 
     // Check if book exists in catalog
-    const { data: existingBook } = await supabase
+    const { data: existingBooks } = await supabase
       .from('books')
       .select('*')
       .eq('isbn', isbn)
-      .single()
+      .limit(1)
+
+    const existingBook = existingBooks?.[0]
 
     if (existingBook) {
       setState(s => ({ ...s, isbn, title: existingBook.title, author: existingBook.author, cover_url: existingBook.cover_url, bookId: existingBook.id }))

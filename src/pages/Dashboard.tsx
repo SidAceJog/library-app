@@ -6,7 +6,7 @@ import Notices from '@/components/Notices'
 
 export default function Dashboard() {
   const { user, resident } = useAuth()
-  const [currentBorrowing, setCurrentBorrowing] = useState<(Borrowing & { book: { title: string; author: string; isbn: string } }) | null>(null)
+  const [currentBorrowings, setCurrentBorrowings] = useState<(Borrowing & { book: { title: string; author: string; isbn: string } })[]>([])
   const [history, setHistory] = useState<(Borrowing & { book: { title: string; author: string } })[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -14,16 +14,15 @@ export default function Dashboard() {
     if (!user) return
 
     async function load() {
-      // Current borrowing
+      // Current borrowings (all unreturned)
       const { data: current } = await supabase
         .from('borrowings')
         .select('*, book:books(title, author, isbn)')
         .eq('resident_id', user!.id)
         .is('returned_at', null)
-        .limit(1)
-        .single()
+        .order('due_at', { ascending: true })
 
-      if (current?.book) setCurrentBorrowing(current as any)
+      setCurrentBorrowings((current || []).filter(c => c.book) as any)
 
       // History (last 10 returned)
       const { data: hist } = await supabase
@@ -43,9 +42,7 @@ export default function Dashboard() {
 
   if (loading) return <p className="text-gray-500">Loading...</p>
 
-  const daysUntilDue = currentBorrowing
-    ? Math.ceil((new Date(currentBorrowing.due_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null
+  if (loading) return <p className="text-gray-500">Loading...</p>
 
   return (
     <div className="space-y-6">
@@ -57,22 +54,27 @@ export default function Dashboard() {
       {/* Notices */}
       <Notices />
 
-      {/* Current borrowing */}
+      {/* Current borrowings */}
       <section>
         <h3 className="font-semibold text-gray-700 mb-2">Currently Borrowed</h3>
-        {currentBorrowing ? (
-          <div className="bg-white border rounded-lg p-4 shadow-sm">
-            <p className="font-medium">{currentBorrowing.book.title}</p>
-            <p className="text-sm text-gray-500">by {currentBorrowing.book.author}</p>
-            <p className="text-sm mt-2">
-              Due: {new Date(currentBorrowing.due_at).toLocaleDateString()}
-              {daysUntilDue !== null && (
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded ${daysUntilDue < 0 ? 'bg-red-100 text-red-700' : daysUntilDue <= 2 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                  {daysUntilDue < 0 ? `${Math.abs(daysUntilDue)} days overdue` : `${daysUntilDue} days left`}
-                </span>
-              )}
-            </p>
-          </div>
+        {currentBorrowings.length > 0 ? (
+          <ul className="bg-white border rounded-lg divide-y shadow-sm">
+            {currentBorrowings.map(b => {
+              const daysLeft = Math.ceil((new Date(b.due_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+              return (
+                <li key={b.id} className="p-4">
+                  <p className="font-medium">{b.book.title}</p>
+                  <p className="text-sm text-gray-500">by {b.book.author}</p>
+                  <p className="text-sm mt-1">
+                    Due: {new Date(b.due_at).toLocaleDateString()}
+                    <span className={`ml-2 text-xs px-2 py-0.5 rounded ${daysLeft < 0 ? 'bg-red-100 text-red-700' : daysLeft <= 2 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                      {daysLeft < 0 ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
+                    </span>
+                  </p>
+                </li>
+              )
+            })}
+          </ul>
         ) : (
           <p className="text-sm text-gray-500 bg-white border rounded-lg p-4">No books currently borrowed. Visit the library to check one out!</p>
         )}

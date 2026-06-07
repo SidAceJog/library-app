@@ -10,6 +10,7 @@ interface CatalogBook {
   cover_url: string | null
   added_at: string
   is_available: boolean
+  borrower_flat?: string
 }
 
 export default function Catalog() {
@@ -17,6 +18,9 @@ export default function Catalog() {
   const [books, setBooks] = useState<CatalogBook[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editAuthor, setEditAuthor] = useState('')
 
   useEffect(() => { loadBooks() }, [])
 
@@ -28,17 +32,21 @@ export default function Catalog() {
       .eq('is_active', true)
       .order('title', { ascending: true })
 
-    // Get currently borrowed book IDs
+    // Get currently borrowed book IDs with borrower flat numbers
     const { data: borrowed } = await supabase
       .from('borrowings')
-      .select('book_id')
+      .select('book_id, resident:residents!borrowings_resident_id_fkey(flat_number)')
       .is('returned_at', null)
 
-    const borrowedIds = new Set((borrowed || []).map(b => b.book_id))
+    const borrowedMap = new Map<string, string>()
+    for (const b of borrowed || []) {
+      borrowedMap.set(b.book_id, (b.resident as any)?.flat_number || '?')
+    }
 
     setBooks((allBooks || []).map(book => ({
       ...book,
-      is_available: !borrowedIds.has(book.id),
+      is_available: !borrowedMap.has(book.id),
+      borrower_flat: borrowedMap.get(book.id),
     })))
     setLoading(false)
   }
@@ -46,6 +54,19 @@ export default function Catalog() {
   async function markUnavailable(bookId: string, reason: string) {
     await supabase.from('books').update({ is_active: false, inactive_reason: reason }).eq('id', bookId)
     setBooks(books.filter(b => b.id !== bookId))
+  }
+
+  function startEdit(book: CatalogBook) {
+    setEditingId(book.id)
+    setEditTitle(book.title)
+    setEditAuthor(book.author)
+  }
+
+  async function saveEdit(bookId: string) {
+    if (!editTitle.trim()) return
+    await supabase.from('books').update({ title: editTitle.trim(), author: editAuthor.trim() }).eq('id', bookId)
+    setBooks(books.map(b => b.id === bookId ? { ...b, title: editTitle.trim(), author: editAuthor.trim() } : b))
+    setEditingId(null)
   }
 
   const filtered = search.length < 2
@@ -93,13 +114,45 @@ export default function Catalog() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{book.title}</p>
-                <p className="text-xs text-gray-500">{book.author}</p>
-                <p className="text-xs text-gray-400 mt-1">ISBN: {book.isbn}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`inline-block text-xs px-2 py-0.5 rounded ${book.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {book.is_available ? 'Available' : 'Checked out'}
-                  </span>
+                {editingId === book.id ? (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                      placeholder="Title"
+                    />
+                    <input
+                      type="text"
+                      value={editAuthor}
+                      onChange={(e) => setEditAuthor(e.target.value)}
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                      placeholder="Author"
+                    />
+                    <div className="flex gap-1">
+                      <button onClick={() => saveEdit(book.id)} className="text-xs bg-green-600 text-white px-2 py-0.5 rounded">Save</button>
+                      <button onClick={() => setEditingId(null)} className="text-xs text-gray-500 px-2 py-0.5">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium truncate">{book.title}</p>
+                    <p className="text-xs text-gray-500">{book.author}</p>
+                    <p className="text-xs text-gray-400 mt-1">ISBN: {book.isbn}</p>
+                    {isAdmin && (book.title === 'Unknown Title' || book.author === 'Unknown Author') && (
+                      <button onClick={() => startEdit(book)} className="text-xs text-blue-600 underline mt-0.5">Edit details</button>
+                    )}
+                  </>
+                )}
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {book.is_available ? (
+                    <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">Available</span>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">
+                      Checked out{book.borrower_flat ? ` • ${book.borrower_flat}` : ''}
+                    </span>
+                  )}
                   {isAdmin && (
                     <select
                       defaultValue=""
@@ -112,6 +165,9 @@ export default function Catalog() {
                       <option value="donated_away">Donated away</option>
                       <option value="other">Other</option>
                     </select>
+                  )}
+                  {isAdmin && editingId !== book.id && !(book.title === 'Unknown Title' || book.author === 'Unknown Author') && (
+                    <button onClick={() => startEdit(book)} className="text-xs text-blue-600 underline">Edit</button>
                   )}
                 </div>
               </div>

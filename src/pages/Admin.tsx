@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { lookupISBN } from '@/lib/isbn'
 import { Borrowing, VolunteerRequest } from '@/lib/types'
 
-type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'settings'
+type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'addbook' | 'settings'
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('overdue')
@@ -13,7 +14,7 @@ export default function Admin() {
 
       {/* Tab navigation */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
-        {(['overdue', 'users', 'volunteers', 'notices', 'settings'] as Tab[]).map(t => (
+        {(['overdue', 'users', 'volunteers', 'notices', 'addbook', 'settings'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -28,6 +29,7 @@ export default function Admin() {
       {tab === 'users' && <UsersTab />}
       {tab === 'volunteers' && <VolunteersTab />}
       {tab === 'notices' && <NoticesTab />}
+      {tab === 'addbook' && <AddBookTab />}
       {tab === 'settings' && <SettingsTab />}
     </div>
   )
@@ -337,6 +339,138 @@ function NoticesTab() {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  )
+}
+
+function AddBookTab() {
+  const [isbn, setIsbn] = useState('')
+  const [title, setTitle] = useState('')
+  const [author, setAuthor] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState('')
+  const [error, setError] = useState('')
+  const [looked, setLooked] = useState(false)
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isbn.trim()) return
+    setError('')
+    setSuccess('')
+    setLoading(true)
+
+    // Check if already in catalog
+    const { data: existing } = await supabase
+      .from('books')
+      .select('id, title')
+      .eq('isbn', isbn.trim())
+      .limit(1)
+
+    if (existing && existing.length > 0) {
+      setError(`Already in catalog: "${existing[0].title}"`)
+      setLoading(false)
+      return
+    }
+
+    const meta = await lookupISBN(isbn.trim())
+    setTitle(meta.title)
+    setAuthor(meta.author)
+    setLooked(true)
+    setLoading(false)
+  }
+
+  async function handleAdd() {
+    if (!title.trim()) { setError('Title is required'); return }
+    setLoading(true)
+    setError('')
+
+    const { error: insertErr } = await supabase
+      .from('books')
+      .insert({ isbn: isbn.trim(), title: title.trim(), author: author.trim() || 'Unknown', cover_url: null })
+
+    if (insertErr) {
+      setError(insertErr.message)
+    } else {
+      setSuccess(`✅ "${title.trim()}" added to catalog`)
+      setIsbn('')
+      setTitle('')
+      setAuthor('')
+      setLooked(false)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      {success && <div className="bg-green-50 border border-green-200 rounded-md p-3 text-green-800 text-sm">{success}</div>}
+      {error && <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-800 text-sm">{error}</div>}
+
+      {!looked ? (
+        <form onSubmit={handleLookup} className="bg-white border rounded-lg p-4 space-y-3">
+          <p className="text-sm text-gray-600">Scan or type ISBN to add a book to the catalog without checking it out.</p>
+          <div>
+            <label htmlFor="add-isbn" className="block text-sm font-medium text-gray-700">ISBN</label>
+            <input
+              id="add-isbn"
+              data-testid="add-book-isbn-input"
+              type="text"
+              required
+              value={isbn}
+              onChange={(e) => setIsbn(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              placeholder="Scan or type ISBN"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-md bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Looking up...' : 'Look Up'}
+          </button>
+        </form>
+      ) : (
+        <div className="bg-white border rounded-lg p-4 space-y-3">
+          <p className="text-xs text-gray-500">ISBN: {isbn}</p>
+          <div>
+            <label htmlFor="add-title" className="block text-sm font-medium text-gray-700">Title</label>
+            <input
+              id="add-title"
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label htmlFor="add-author" className="block text-sm font-medium text-gray-700">Author</label>
+            <input
+              id="add-author"
+              type="text"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setLooked(false); setTitle(''); setAuthor('') }}
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={loading}
+              data-testid="add-book-confirm-button"
+              className="rounded-md bg-green-600 px-4 py-2 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? 'Adding...' : 'Add to Catalog'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

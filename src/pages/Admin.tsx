@@ -349,6 +349,7 @@ function AddBookTab() {
   const [isbn, setIsbn] = useState('')
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
@@ -376,6 +377,7 @@ function AddBookTab() {
     const meta = await lookupISBN(scannedIsbn)
     setTitle(meta.title)
     setAuthor(meta.author)
+    setCoverUrl(meta.cover_url)
     setLooked(true)
     setLoading(false)
   }
@@ -387,7 +389,7 @@ function AddBookTab() {
 
     const { error: insertErr } = await supabase
       .from('books')
-      .insert({ isbn: isbn.trim(), title: title.trim(), author: author.trim() || 'Unknown', cover_url: null })
+      .insert({ isbn: isbn.trim(), title: title.trim(), author: author.trim() || 'Unknown', cover_url: coverUrl })
 
     if (insertErr) {
       setError(insertErr.message)
@@ -396,6 +398,7 @@ function AddBookTab() {
       setIsbn('')
       setTitle('')
       setAuthor('')
+      setCoverUrl(null)
       setLooked(false)
     }
     setLoading(false)

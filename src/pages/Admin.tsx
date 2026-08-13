@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { lookupISBN } from '@/lib/isbn'
+import BarcodeScanner from '@/components/BarcodeScanner'
 import { Borrowing, VolunteerRequest } from '@/lib/types'
 
 type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'addbook' | 'settings'
@@ -353,18 +354,17 @@ function AddBookTab() {
   const [error, setError] = useState('')
   const [looked, setLooked] = useState(false)
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault()
-    if (!isbn.trim()) return
+  async function handleScanLookup(scannedIsbn: string) {
     setError('')
     setSuccess('')
     setLoading(true)
+    setIsbn(scannedIsbn)
 
     // Check if already in catalog
     const { data: existing } = await supabase
       .from('books')
       .select('id, title')
-      .eq('isbn', isbn.trim())
+      .eq('isbn', scannedIsbn)
       .limit(1)
 
     if (existing && existing.length > 0) {
@@ -373,7 +373,7 @@ function AddBookTab() {
       return
     }
 
-    const meta = await lookupISBN(isbn.trim())
+    const meta = await lookupISBN(scannedIsbn)
     setTitle(meta.title)
     setAuthor(meta.author)
     setLooked(true)
@@ -407,29 +407,11 @@ function AddBookTab() {
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-800 text-sm">{error}</div>}
 
       {!looked ? (
-        <form onSubmit={handleLookup} className="bg-white border rounded-lg p-4 space-y-3">
-          <p className="text-sm text-gray-600">Scan or type ISBN to add a book to the catalog without checking it out.</p>
-          <div>
-            <label htmlFor="add-isbn" className="block text-sm font-medium text-gray-700">ISBN</label>
-            <input
-              id="add-isbn"
-              data-testid="add-book-isbn-input"
-              type="text"
-              required
-              value={isbn}
-              onChange={(e) => setIsbn(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              placeholder="Scan or type ISBN"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Looking up...' : 'Look Up'}
-          </button>
-        </form>
+        <div className="bg-white border rounded-lg p-4 space-y-4">
+          <p className="text-sm text-gray-600">Scan or type ISBN to add a book to the catalog.</p>
+          <BarcodeScanner onScan={(scannedIsbn) => { setIsbn(scannedIsbn); handleScanLookup(scannedIsbn) }} onError={(e) => setError(e)} />
+          {loading && <p className="text-sm text-gray-500">Looking up...</p>}
+        </div>
       ) : (
         <div className="bg-white border rounded-lg p-4 space-y-3">
           <p className="text-xs text-gray-500">ISBN: {isbn}</p>

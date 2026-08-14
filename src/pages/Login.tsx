@@ -5,6 +5,7 @@ export default function Login() {
   const { signIn } = useAuth()
   const [flatNumber, setFlatNumber] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -41,10 +42,11 @@ export default function Login() {
               data-testid="login-flat-number-input"
               type="text"
               required
+              autoComplete="username"
               value={flatNumber}
               onChange={(e) => setFlatNumber(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="e.g. A-101"
+              placeholder="e.g. F-602"
             />
           </div>
 
@@ -55,13 +57,23 @@ export default function Login() {
             <input
               id="password"
               data-testid="login-password-input"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Enter password"
             />
+            <label className="flex items-center gap-2 mt-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-xs text-gray-600">Show password</span>
+            </label>
           </div>
 
           {error && (

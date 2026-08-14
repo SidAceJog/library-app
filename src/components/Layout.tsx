@@ -9,7 +9,11 @@ export default function Layout() {
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-sm sm:text-lg font-bold text-gray-900 truncate">📚 Pride Platinum Library</h1>
+          <h1 className="text-sm sm:text-lg font-bold text-gray-900 truncate flex items-center gap-2">
+            <img src="/logo.png" alt="" className="w-7 h-7" />
+            <span className="hidden sm:inline">Pride Platinum Library</span>
+            <span className="sm:hidden">PPL</span>
+          </h1>
           <div className="flex items-center gap-2 shrink-0 ml-2">
             <span className="text-xs sm:text-sm text-gray-600">
               {resident?.flat_number}
@@ -40,6 +44,7 @@ export default function Layout() {
           {isAdmin && <NavItem to="/checkout" label="Checkout" icon="📖" />}
           {isAdmin && <NavItem to="/return" label="Return" icon="↩️" />}
           {isAdmin && <NavItem to="/admin" label="Admin" icon="⚙️" />}
+          {!isAdmin && <NavItem to="/rules" label="Rules" icon="📜" />}
           {!isAdmin && <NavItem to="/volunteer" label="Volunteer" icon="🙋" />}
         </div>
       </nav>

@@ -10,6 +10,7 @@ import Admin from '@/pages/Admin'
 import Volunteer from '@/pages/Volunteer'
 import Wishlist from '@/pages/Wishlist'
 import Catalog from '@/pages/Catalog'
+import Rules from '@/pages/Rules'
 
 function AppRoutes() {
   const { user, resident, isAdmin, loading } = useAuth()
@@ -34,6 +35,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/rules" element={<Rules />} />
         <Route path="/checkout" element={isAdmin ? <Checkout /> : <Navigate to="/dashboard" />} />
         <Route path="/return" element={isAdmin ? <Return /> : <Navigate to="/dashboard" />} />
         <Route path="/admin" element={isAdmin ? <Admin /> : <Navigate to="/dashboard" />} />

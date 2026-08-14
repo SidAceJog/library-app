@@ -41,10 +41,10 @@ export default function Layout() {
           <NavItem to="/dashboard" label="Home" icon="🏠" />
           <NavItem to="/catalog" label="Catalog" icon="📚" />
           <NavItem to="/wishlist" label="Wishlist" icon="📋" />
+          <NavItem to="/rules" label="Rules" icon="📜" />
           {isAdmin && <NavItem to="/checkout" label="Checkout" icon="📖" />}
           {isAdmin && <NavItem to="/return" label="Return" icon="↩️" />}
           {isAdmin && <NavItem to="/admin" label="Admin" icon="⚙️" />}
-          {!isAdmin && <NavItem to="/rules" label="Rules" icon="📜" />}
           {!isAdmin && <NavItem to="/volunteer" label="Volunteer" icon="🙋" />}
         </div>
       </nav>

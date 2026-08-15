@@ -4,7 +4,7 @@ import { lookupISBN } from '@/lib/isbn'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import { Borrowing, VolunteerRequest } from '@/lib/types'
 
-type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'addbook' | 'suggestions' | 'settings'
+type Tab = 'overdue' | 'addbook' | 'people' | 'comms' | 'settings'
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('overdue')
@@ -15,24 +15,50 @@ export default function Admin() {
 
       {/* Tab navigation */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
-        {(['overdue', 'users', 'volunteers', 'notices', 'addbook', 'suggestions', 'settings'] as Tab[]).map(t => (
+        {([['overdue', 'Overdue'], ['addbook', 'Add Book'], ['people', 'People'], ['comms', 'Comms'], ['settings', 'Settings']] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 text-xs py-2 rounded-md font-medium capitalize ${tab === t ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}
+            className={`flex-1 text-xs py-2 rounded-md font-medium ${tab === t ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600'}`}
           >
-            {t}
+            {label}
           </button>
         ))}
       </div>
 
       {tab === 'overdue' && <OverdueTab />}
-      {tab === 'users' && <UsersTab />}
-      {tab === 'volunteers' && <VolunteersTab />}
-      {tab === 'notices' && <NoticesTab />}
       {tab === 'addbook' && <AddBookTab />}
-      {tab === 'suggestions' && <SuggestionsTab />}
+      {tab === 'people' && <PeopleTab />}
+      {tab === 'comms' && <CommsTab />}
       {tab === 'settings' && <SettingsTab />}
+    </div>
+  )
+}
+
+function PeopleTab() {
+  const [sub, setSub] = useState<'users' | 'volunteers'>('users')
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <button onClick={() => setSub('users')} className={`text-xs px-3 py-1 rounded-full ${sub === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Users</button>
+        <button onClick={() => setSub('volunteers')} className={`text-xs px-3 py-1 rounded-full ${sub === 'volunteers' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Volunteers</button>
+      </div>
+      {sub === 'users' && <UsersTab />}
+      {sub === 'volunteers' && <VolunteersTab />}
+    </div>
+  )
+}
+
+function CommsTab() {
+  const [sub, setSub] = useState<'notices' | 'suggestions'>('notices')
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <button onClick={() => setSub('notices')} className={`text-xs px-3 py-1 rounded-full ${sub === 'notices' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Notices</button>
+        <button onClick={() => setSub('suggestions')} className={`text-xs px-3 py-1 rounded-full ${sub === 'suggestions' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>Suggestions</button>
+      </div>
+      {sub === 'notices' && <NoticesTab />}
+      {sub === 'suggestions' && <SuggestionsTab />}
     </div>
   )
 }

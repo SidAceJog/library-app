@@ -4,7 +4,7 @@ import { lookupISBN } from '@/lib/isbn'
 import BarcodeScanner from '@/components/BarcodeScanner'
 import { Borrowing, VolunteerRequest } from '@/lib/types'
 
-type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'addbook' | 'settings'
+type Tab = 'overdue' | 'users' | 'volunteers' | 'notices' | 'addbook' | 'suggestions' | 'settings'
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('overdue')
@@ -15,7 +15,7 @@ export default function Admin() {
 
       {/* Tab navigation */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
-        {(['overdue', 'users', 'volunteers', 'notices', 'addbook', 'settings'] as Tab[]).map(t => (
+        {(['overdue', 'users', 'volunteers', 'notices', 'addbook', 'suggestions', 'settings'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -31,6 +31,7 @@ export default function Admin() {
       {tab === 'volunteers' && <VolunteersTab />}
       {tab === 'notices' && <NoticesTab />}
       {tab === 'addbook' && <AddBookTab />}
+      {tab === 'suggestions' && <SuggestionsTab />}
       {tab === 'settings' && <SettingsTab />}
     </div>
   )
@@ -456,6 +457,45 @@ function AddBookTab() {
             </button>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+function SuggestionsTab() {
+  const [suggestions, setSuggestions] = useState<{ id: string; message: string; created_at: string; resident: { flat_number: string; name: string } }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('suggestions')
+        .select('id, message, created_at, resident:residents!suggestions_resident_id_fkey(flat_number, name)')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      setSuggestions((data || []).filter(d => d.resident) as any)
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  if (loading) return <p className="text-sm text-gray-500">Loading...</p>
+
+  return (
+    <div>
+      {suggestions.length === 0 ? (
+        <p className="text-sm text-gray-500 bg-white border rounded-lg p-4">No suggestions yet.</p>
+      ) : (
+        <ul className="bg-white border rounded-lg divide-y shadow-sm">
+          {suggestions.map(s => (
+            <li key={s.id} className="px-4 py-3">
+              <p className="text-sm">{s.message}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {s.resident.flat_number} {s.resident.name ? `— ${s.resident.name}` : ''} • {new Date(s.created_at).toLocaleDateString()}
+              </p>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )

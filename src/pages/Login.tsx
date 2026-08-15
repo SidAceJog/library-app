@@ -100,7 +100,7 @@ export default function Login() {
             <li>• Siddhesh Jog (<a href="https://wa.me/919175558996" className="text-blue-600 underline">+91 9175558996</a>)</li>
           </ul>
           <hr className="border-gray-200 my-2" />
-          <p>Once logged in, make sure to check out the <a href="/rules" className="text-blue-600 underline font-medium">Rules</a>.</p>
+          <p>Make sure to check out the <a href="/rules" className="text-blue-600 underline font-medium">Rules</a>.</p>
           <p>You can browse the <strong>Catalog</strong>, request books through <strong>Wishlist</strong>, volunteer to be the librarian (admin) for a day, and submit <strong>Suggestions</strong> — all through the app.</p>
           <p className="text-gray-500 italic">Suggestions may or may not be acted upon at the discretion of the library team. Any voluntary help is welcome. Enjoy the library!</p>
         </div>

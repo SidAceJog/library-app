@@ -9,6 +9,9 @@ export default function Dashboard() {
   const [currentBorrowings, setCurrentBorrowings] = useState<(Borrowing & { book: { title: string; author: string; isbn: string } })[]>([])
   const [history, setHistory] = useState<(Borrowing & { book: { title: string; author: string } })[]>([])
   const [loading, setLoading] = useState(true)
+  const [suggestion, setSuggestion] = useState('')
+  const [suggestionSent, setSuggestionSent] = useState(false)
+  const [suggestionSending, setSuggestionSending] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -96,6 +99,42 @@ export default function Dashboard() {
           </ul>
         </section>
       )}
+
+      {/* Suggestion */}
+      <section>
+        <h3 className="font-semibold text-gray-700 mb-2">💡 Suggestion</h3>
+        {suggestionSent ? (
+          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">Thanks! Your suggestion has been submitted.</p>
+        ) : (
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            if (!suggestion.trim()) return
+            setSuggestionSending(true)
+            await supabase.from('suggestions').insert({ resident_id: user!.id, message: suggestion.trim() })
+            setSuggestion('')
+            setSuggestionSent(true)
+            setSuggestionSending(false)
+            setTimeout(() => setSuggestionSent(false), 5000)
+          }} className="bg-white border rounded-lg p-3 shadow-sm space-y-2">
+            <textarea
+              value={suggestion}
+              onChange={(e) => setSuggestion(e.target.value)}
+              placeholder="Any suggestions for the library? Share here..."
+              rows={2}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              data-testid="suggestion-input"
+            />
+            <button
+              type="submit"
+              disabled={suggestionSending || !suggestion.trim()}
+              data-testid="suggestion-submit"
+              className="rounded-md bg-blue-600 px-4 py-1.5 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {suggestionSending ? 'Sending...' : 'Submit'}
+            </button>
+          </form>
+        )}
+      </section>
     </div>
   )
 }

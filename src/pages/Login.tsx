@@ -89,6 +89,20 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <div className="bg-gray-100 rounded-lg p-4 space-y-2 text-xs text-gray-600">
+          <p><strong>Username:</strong> Your flat number (e.g. F-602)</p>
+          <p><strong>Password:</strong> For your first-time password, WhatsApp:</p>
+          <ul className="pl-3 space-y-0.5">
+            <li>• Chaitanya Govande (<a href="https://wa.me/917722009383" className="text-blue-600 underline">+91 7722009383</a>)</li>
+            <li>• Vaibhav Dugar (<a href="https://wa.me/919967589210" className="text-blue-600 underline">+91 9967589210</a>)</li>
+            <li>• Siddhesh Jog (<a href="https://wa.me/919175558996" className="text-blue-600 underline">+91 9175558996</a>)</li>
+          </ul>
+          <hr className="border-gray-200 my-2" />
+          <p>Once logged in, make sure to check out the <strong>Rules</strong>.</p>
+          <p>You can browse the <strong>Catalog</strong>, request books through <strong>Wishlist</strong>, volunteer to be the librarian (admin) for a day, and submit <strong>Suggestions</strong> — all through the app.</p>
+          <p className="text-gray-500 italic">Suggestions may or may not be acted upon at the discretion of the library team. Any voluntary help is welcome. Enjoy the library!</p>
+        </div>
       </div>
     </div>
   )

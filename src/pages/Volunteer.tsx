@@ -33,7 +33,9 @@ export default function Volunteer() {
     if (!date) { setError('Please select a date'); return }
 
     const selectedDate = new Date(date)
-    if (selectedDate <= new Date()) { setError('Please select a future date'); return }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (selectedDate < today) { setError('Please select today or a future date'); return }
 
     setLoading(true)
     const { error: insertErr } = await supabase
@@ -80,7 +82,7 @@ export default function Volunteer() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+            min={new Date().toISOString().split('T')[0]}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
           />
         </div>

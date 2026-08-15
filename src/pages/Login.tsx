@@ -29,6 +29,7 @@ export default function Login() {
           <img src="/logo.png" alt="Pride Platinum Library" className="w-24 h-24 mx-auto mb-2" />
           <h1 className="text-xl font-bold text-gray-900">Pride Platinum Library</h1>
           <p className="mt-1 text-xs text-gray-500">Baner, Pune</p>
+          <p className="mt-2 text-sm font-medium text-blue-800 bg-blue-50 rounded px-3 py-1.5">📍 Open daily 7–8 PM | New Society Office</p>
           <p className="mt-2 text-sm text-gray-600">Sign in with your flat number</p>
         </div>
 
@@ -99,7 +100,7 @@ export default function Login() {
             <li>• Siddhesh Jog (<a href="https://wa.me/919175558996" className="text-blue-600 underline">+91 9175558996</a>)</li>
           </ul>
           <hr className="border-gray-200 my-2" />
-          <p>Once logged in, make sure to check out the <strong>Rules</strong>.</p>
+          <p>Once logged in, make sure to check out the <a href="/rules" className="text-blue-600 underline font-medium">Rules</a>.</p>
           <p>You can browse the <strong>Catalog</strong>, request books through <strong>Wishlist</strong>, volunteer to be the librarian (admin) for a day, and submit <strong>Suggestions</strong> — all through the app.</p>
           <p className="text-gray-500 italic">Suggestions may or may not be acted upon at the discretion of the library team. Any voluntary help is welcome. Enjoy the library!</p>
         </div>

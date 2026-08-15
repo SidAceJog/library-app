@@ -45,13 +45,14 @@ export default function Dashboard() {
 
   if (loading) return <p className="text-gray-500">Loading...</p>
 
-  if (loading) return <p className="text-gray-500">Loading...</p>
-
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold">Welcome, {resident?.name || resident?.flat_number}</h2>
-        <p className="text-sm text-gray-500">Flat {resident?.flat_number}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Welcome, {resident?.name || resident?.flat_number}</h2>
+          <p className="text-sm text-gray-500">Flat {resident?.flat_number}</p>
+        </div>
+        <a href="/rules" className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full hover:bg-gray-200">📜 Rules</a>
       </div>
 
       {/* Notices */}

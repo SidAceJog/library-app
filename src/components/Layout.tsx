@@ -39,9 +39,7 @@ export default function Layout() {
       <nav className="bg-white border-t fixed bottom-0 left-0 right-0 safe-area-pb">
         <div className="max-w-4xl mx-auto flex">
           <NavItem to="/dashboard" label="Home" icon="🏠" />
-          <NavItem to="/catalog" label="Catalog" icon="📚" />
-          <NavItem to="/wishlist" label="Wishlist" icon="📋" />
-          <NavItem to="/rules" label="Rules" icon="📜" />
+          <NavItem to="/catalog" label="Books" icon="📚" />
           {isAdmin && <NavItem to="/checkout" label="Checkout" icon="📖" />}
           {isAdmin && <NavItem to="/return" label="Return" icon="↩️" />}
           {isAdmin && <NavItem to="/admin" label="Admin" icon="⚙️" />}

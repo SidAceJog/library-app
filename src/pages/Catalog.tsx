@@ -101,7 +101,7 @@ export default function Catalog() {
       ) : (
         <ul className="grid gap-3">
           {filtered.map(book => (
-            <li key={book.id} className="bg-white border rounded-lg p-3 shadow-sm flex gap-3">
+            <li key={book.id} className="bg-white border rounded-lg p-3 shadow-sm flex gap-3 overflow-hidden">
               {book.cover_url ? (
                 <img
                   src={book.cover_url}
@@ -139,7 +139,7 @@ export default function Catalog() {
                   <>
                     <p className="text-sm font-medium truncate">{book.title}</p>
                     <p className="text-xs text-gray-500">{book.author}</p>
-                    <p className="text-xs text-gray-400 mt-1">ISBN: {book.isbn}</p>
+                    <p className="text-xs text-gray-400 mt-1 truncate">ISBN: {book.isbn}</p>
                     {isAdmin && (book.title === 'Unknown Title' || book.author === 'Unknown Author') && (
                       <button onClick={() => startEdit(book)} className="text-xs text-blue-600 underline mt-0.5">Edit details</button>
                     )}
@@ -149,7 +149,7 @@ export default function Catalog() {
                   {book.is_available ? (
                     <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">Available</span>
                   ) : (
-                    <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">
+                    <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700 truncate max-w-[160px]">
                       Checked out{book.borrower_flat ? ` • ${book.borrower_flat}` : ''}
                     </span>
                   )}

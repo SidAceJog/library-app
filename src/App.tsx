@@ -24,7 +24,18 @@ function AppRoutes() {
   }
 
   // Not logged in
-  if (!user) return <Login />
+  if (!user) {
+    // Allow public access to rules page
+    if (window.location.pathname === '/rules') {
+      return (
+        <div className="min-h-screen bg-gray-50 px-4 py-6 max-w-2xl mx-auto">
+          <a href="/" className="text-sm text-blue-600 underline mb-4 inline-block">← Back to login</a>
+          <Rules />
+        </div>
+      )
+    }
+    return <Login />
+  }
 
   // Must change password
   if (resident?.must_change_password) return <ChangePassword />
